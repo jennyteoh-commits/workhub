@@ -1952,7 +1952,14 @@ body {
     z-index: 2500;
   }
   .bottom-nav-item {
-    flex: 1;
+    /* A plain flex:1 let the plain-<button> "More" item (no .nav-item padding)
+       and the longer "Task Management" label pull unequal shares of space —
+       pinning each item to a fixed 20% of the bar guarantees all 5 items are
+       exactly the same width regardless of padding/content differences. */
+    flex: 0 0 20%;
+    width: 20%;
+    max-width: 20%;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1966,20 +1973,49 @@ body {
     font-weight: 700;
     cursor: pointer;
     min-height: 44px;
+    position: relative;
   }
   .bottom-nav-item i {
     width: 20px;
     height: 20px;
     stroke-width: 2.2;
   }
+  .bottom-nav-item > span:last-child {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  /* Active state: keep the bar's own yellow background (this overrides the
+     desktop .nav-item.active rule, which paints a solid dark-brown block —
+     .bottom-nav-item also carries the shared .nav-item class for click-
+     delegation, so without this override the sidebar's "selected" treatment
+     was leaking onto the bottom nav). Active items get a dark-brown icon/
+     label plus a small underline pill instead of a filled rectangle. */
   .bottom-nav-item.active {
+    background-color: transparent;
+    box-shadow: none;
+    color: #2F0000;
+  }
+  .bottom-nav-item.active i {
     color: #2F0000;
   }
   .bottom-nav-item.active .bottom-nav-icon-wrap {
-    background-color: var(--text-main);
+    background-color: transparent;
   }
   .bottom-nav-item.active .bottom-nav-icon-wrap i {
-    color: #FFD000;
+    color: #2F0000;
+  }
+  .bottom-nav-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    border-radius: 3px;
+    background-color: #2F0000;
   }
   .bottom-nav-icon-wrap {
     width: 30px;
@@ -2230,6 +2266,48 @@ body {
   }
   .week-view-scroll-wrapper > div {
     min-width: 760px;
+  }
+
+  /* ---- Calendar sidebar: Today's Agenda / Upcoming Events / Quick Add Event ---- */
+  .calendar-sidebar-panel {
+    width: 100%;
+    max-width: 100%;
+  }
+  .cal-side-card {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .agenda-item {
+    gap: 10px;
+    padding-bottom: 10px;
+  }
+  .agenda-details {
+    min-width: 0;
+  }
+  .agenda-title {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+  .agenda-meta {
+    overflow-wrap: break-word;
+  }
+  /* Quick Add Event: consistent full-width, comfortably tall touch targets */
+  .quick-add-form .form-control {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 48px;
+  }
+  .quick-add-form .form-row {
+    gap: 8px;
+  }
+  .quick-add-form button[type="submit"] {
+    min-height: 52px;
+    box-sizing: border-box;
+    margin-top: 10px;
+    border-radius: 10px;
   }
 
   /* ---- Manage Projects / Categories lists ---- */
