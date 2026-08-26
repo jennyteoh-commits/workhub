@@ -2312,6 +2312,20 @@ body {
   .quick-add-form {
     gap: 8px;
   }
+   .quick-add-form .form-row {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.quick-add-form .form-row .form-group {
+  min-width: 0;
+  width: 100%;
+}
+.quick-add-form .form-row .form-control {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
   .quick-add-form .form-group {
     gap: 4px;
   }
