@@ -235,6 +235,29 @@
           </div>
         </div>
 
+        <!-- 1b. MONTHLY TASK SUMMARY (personal daily task metrics, current month by Due Date) -->
+        <div class="table-container-card" style="margin-bottom: 24px; padding: 20px;">
+          <div class="table-header-bar" style="margin-bottom: 16px;">
+            <div class="table-title">
+              <i data-lucide="calendar-check-2" style="width: 20px; height: 20px;"></i>
+              <span id="monthlySummaryTitle">Monthly Task Summary</span>
+            </div>
+            <span id="monthlySummarySubText" style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted);"></span>
+          </div>
+          <!-- Month selector for this summary card only (independent of Task Management's tabs) -->
+          <div class="task-month-tabs" id="dashboardMonthTabs" style="margin-bottom: 16px;">
+            <!-- Dynamically Rendered by app.js -->
+          </div>
+          <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center;">
+            <div id="monthlySummaryStats" class="monthly-stats-grid">
+              <!-- Dynamically Rendered by app.js -->
+            </div>
+            <div style="width: 170px; height: 170px; flex-shrink: 0; margin: 0 auto;">
+              <canvas id="monthlyCompletionChart"></canvas>
+            </div>
+          </div>
+        </div>
+
         <!-- 2. TWO LARGE CHARTS (Tasks by Status & Tasks by Category) -->
         <div class="charts-grid">
           <!-- Chart 1: Tasks by Status -->
@@ -381,6 +404,11 @@
           </div>
         </div>
 
+        <!-- Monthly Tab Navigation (filters Task Management by Due Date's month) -->
+        <div class="task-month-tabs" id="taskMonthTabs">
+          <!-- Dynamically Rendered by app.js -->
+        </div>
+
         <!-- Active Filter Indicator Banner -->
         <div id="activeFilterBanner" class="active-filter-banner" style="display: none;"></div>
 
@@ -465,6 +493,7 @@
                   <th>Priority</th>
                   <th>Status</th>
                   <th>Due Date</th>
+                  <th>Completion Date</th>
                   <th>Assignee</th>
                   <th>Actions</th>
                 </tr>
@@ -473,6 +502,10 @@
                 <!-- Dynamically Rendered by app.js -->
               </tbody>
             </table>
+          </div>
+          <!-- Pagination Controls (Previous / page numbers / Next) -->
+          <div class="task-pagination" id="taskPagination">
+            <!-- Dynamically Rendered by app.js -->
           </div>
         </div>
       </section>

@@ -142,6 +142,8 @@ const I18N = {
     sortPriority: 'Priority (High to Low)',
     sortTitle: 'Title (A-Z)',
     btnResetFilters: 'Reset Filters',
+    btnPrevious: 'Previous',
+    btnNext: 'Next',
     taskCountShowing: 'Showing {filtered} of {total} tasks',
     emptyTable: 'No tasks found matching current criteria.',
     activeFilterText: 'Active Filter: {filterDesc}',
@@ -449,6 +451,8 @@ const I18N = {
     sortPriority: '优先级 (由高至低)',
     sortTitle: '标题字母顺序 (A-Z)',
     btnResetFilters: '重置筛选',
+    btnPrevious: '上一页',
+    btnNext: '下一页',
     taskCountShowing: '显示 {total} 个任务中的 {filtered} 个',
     emptyTable: '未找到符合当前条件的任务。',
     activeFilterText: '当前筛选: {filterDesc}',
@@ -1091,8 +1095,16 @@ let appState = {
     // CURRENT calendar month, computed fresh from getTodaySGTStr() at load
     // time — never persisted/hardcoded, so a future month becomes the
     // default automatically the next time the app loads that month.
-    taskMonth: getTodaySGTStr().slice(0, 7)
+    taskMonth: getTodaySGTStr().slice(0, 7),
+    // Dashboard's "Monthly Task Summary" month selector — independent of the
+    // Task Management tab above (separate page), same auto-current-month
+    // default logic.
+    dashboardMonth: getTodaySGTStr().slice(0, 7)
   },
+  // Task Management pagination — resets to page 1 whenever the month tab,
+  // any filter, sort order, or search changes. Never persisted (always
+  // starts fresh on load).
+  taskManagementPage: 1,
   chartInstances: {
     statusChart: null,
     categoryChart: null,
@@ -2235,6 +2247,7 @@ function initGlobalSearch() {
 
   searchInput.addEventListener('input', (e) => {
     appState.filters.search = e.target.value.trim().toLowerCase();
+    appState.taskManagementPage = 1;
     renderDashboard();
     renderTaskManagement();
     if (window.lucide) lucide.createIcons();
@@ -2369,13 +2382,41 @@ const PRIORITY_COLOR_MAP = {
 // current calendar month, computed from Due Date, on top of the existing 5
 // KPI cards above (additive only — those cards are untouched).
 // ==========================================================================
+function renderDashboardMonthTabs() {
+  const container = document.getElementById('dashboardMonthTabs');
+  if (!container) return;
+
+  const months = getTaskMonthTabList();
+  if (!months.includes(appState.filters.dashboardMonth)) {
+    appState.filters.dashboardMonth = getTodaySGTStr().slice(0, 7);
+  }
+
+  container.innerHTML = months.map(m => {
+    const isActive = m === appState.filters.dashboardMonth;
+    return `
+      <button type="button" class="month-tab ${isActive ? 'active' : ''}" onclick="selectDashboardMonth('${m}')">
+        ${formatMonthTabLabel(m)}
+      </button>
+    `;
+  }).join('');
+}
+
+function selectDashboardMonth(monthStr) {
+  appState.filters.dashboardMonth = monthStr;
+  renderDashboard();
+  if (window.lucide) lucide.createIcons();
+}
+window.selectDashboardMonth = selectDashboardMonth;
+
 function renderMonthlyTaskSummary(tasks) {
   const summaryStatsEl = document.getElementById('monthlySummaryStats');
   const summarySubEl = document.getElementById('monthlySummarySubText');
   if (!summaryStatsEl) return;
 
+  renderDashboardMonthTabs();
+
   const todayStr = getTodaySGTStr();
-  const currentMonth = todayStr.slice(0, 7);
+  const currentMonth = appState.filters.dashboardMonth || todayStr.slice(0, 7);
   const monthTasks = tasks.filter(t => t.dueDate && t.dueDate.slice(0, 7) === currentMonth);
 
   const totalTasks = monthTasks.length;
@@ -2841,10 +2882,53 @@ function renderTaskMonthTabs() {
 
 function selectTaskMonth(monthStr) {
   appState.filters.taskMonth = monthStr;
+  appState.taskManagementPage = 1; // changing month resets pagination
   renderTaskManagement();
   if (window.lucide) lucide.createIcons();
 }
 window.selectTaskMonth = selectTaskMonth;
+
+// ==========================================================================
+// TASK MANAGEMENT — PAGINATION
+// ==========================================================================
+// Matches the app's existing "8 items" convention (the Dashboard's Recent
+// Tasks table already shows its top 8). This only controls how many ALREADY
+// FILTERED rows get sliced into the DOM per page — it never touches
+// appState.tasks or creates/duplicates any task data.
+const TASK_PAGE_SIZE = 8;
+
+function renderTaskPagination(currentPage, totalPages) {
+  const container = document.getElementById('taskPagination');
+  if (!container) return;
+
+  if (totalPages <= 1) {
+    container.innerHTML = '';
+    return;
+  }
+
+  let pageButtons = '';
+  for (let p = 1; p <= totalPages; p++) {
+    pageButtons += `<button type="button" class="pagination-btn page-num ${p === currentPage ? 'active' : ''}" onclick="goToTaskPage(${p})">${p}</button>`;
+  }
+
+  container.innerHTML = `
+    <button type="button" class="pagination-btn pagination-nav" onclick="goToTaskPage(${currentPage - 1})" ${currentPage <= 1 ? 'disabled' : ''}>
+      <i data-lucide="chevron-left"></i><span>${t('btnPrevious')}</span>
+    </button>
+    <div class="pagination-pages">${pageButtons}</div>
+    <button type="button" class="pagination-btn pagination-nav" onclick="goToTaskPage(${currentPage + 1})" ${currentPage >= totalPages ? 'disabled' : ''}>
+      <span>${t('btnNext')}</span><i data-lucide="chevron-right"></i>
+    </button>
+  `;
+  if (window.lucide) lucide.createIcons();
+}
+
+function goToTaskPage(page) {
+  appState.taskManagementPage = page;
+  renderTaskManagement();
+  if (window.lucide) lucide.createIcons();
+}
+window.goToTaskPage = goToTaskPage;
 
 function renderTaskManagement() {
   const tbody = document.getElementById('taskManagementTableBody');
@@ -2936,13 +3020,25 @@ function renderTaskManagement() {
     }
   });
 
+  // Pagination — operates on the already-filtered (month + search + all
+  // dropdown filters) and already-sorted list. This only slices which rows
+  // get rendered; it never touches appState.tasks itself.
+  const totalFiltered = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / TASK_PAGE_SIZE));
+  if (appState.taskManagementPage > totalPages) appState.taskManagementPage = totalPages;
+  if (appState.taskManagementPage < 1) appState.taskManagementPage = 1;
+  const pageStart = (appState.taskManagementPage - 1) * TASK_PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + TASK_PAGE_SIZE);
+
   if (countEl) {
-    countEl.textContent = t('taskCountShowing', { filtered: filtered.length, total: appState.tasks.length });
+    countEl.textContent = t('taskCountShowing', { filtered: pageItems.length, total: totalFiltered });
   }
+
+  renderTaskPagination(appState.taskManagementPage, totalPages);
 
   const todayStr = getTodaySGTStr();
 
-  if (filtered.length === 0) {
+  if (totalFiltered === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="10" style="text-align: center; padding: 40px; color: var(--text-muted); font-weight: 700;">
@@ -2954,7 +3050,7 @@ function renderTaskManagement() {
     return;
   }
 
-  tbody.innerHTML = filtered.map(task => `
+  tbody.innerHTML = pageItems.map(task => `
     <tr class="${task.status === 'Completed' ? 'row-completed' : ''}">
       <td style="width: 44px; text-align: center;" data-label="">
         <input type="checkbox" class="task-checkbox" ${task.status === 'Completed' ? 'checked' : ''} onchange="toggleTaskStatus('${task.id}', this.checked)">
@@ -3016,6 +3112,7 @@ function resetAllTaskFilters() {
   appState.filters.priority = 'ALL';
   appState.filters.category = 'ALL';
   appState.filters.sortBy = 'dueDateAsc';
+  appState.taskManagementPage = 1;
   const pf = document.getElementById('filter-project');
   const sf = document.getElementById('filter-status');
   const prf = document.getElementById('filter-priority');
@@ -3054,6 +3151,7 @@ function initTaskFilterListeners() {
   if (projectFilter) {
     projectFilter.addEventListener('change', (e) => {
       appState.filters.project = e.target.value;
+      appState.taskManagementPage = 1;
       renderTaskManagement();
       if (window.lucide) lucide.createIcons();
     });
@@ -3062,6 +3160,7 @@ function initTaskFilterListeners() {
   if (statusFilter) {
     statusFilter.addEventListener('change', (e) => {
       appState.filters.status = e.target.value;
+      appState.taskManagementPage = 1;
       renderTaskManagement();
       if (window.lucide) lucide.createIcons();
     });
@@ -3070,6 +3169,7 @@ function initTaskFilterListeners() {
   if (priorityFilter) {
     priorityFilter.addEventListener('change', (e) => {
       appState.filters.priority = e.target.value;
+      appState.taskManagementPage = 1;
       renderTaskManagement();
       if (window.lucide) lucide.createIcons();
     });
@@ -3078,6 +3178,7 @@ function initTaskFilterListeners() {
   if (categoryFilter) {
     categoryFilter.addEventListener('change', (e) => {
       appState.filters.category = e.target.value;
+      appState.taskManagementPage = 1;
       renderTaskManagement();
       if (window.lucide) lucide.createIcons();
     });
@@ -3086,6 +3187,7 @@ function initTaskFilterListeners() {
   if (sortFilter) {
     sortFilter.addEventListener('change', (e) => {
       appState.filters.sortBy = e.target.value;
+      appState.taskManagementPage = 1;
       renderTaskManagement();
       if (window.lucide) lucide.createIcons();
     });

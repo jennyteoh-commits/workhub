@@ -1010,6 +1010,63 @@ body {
 }
 
 /* ==========================================================================
+   TASK MANAGEMENT — PAGINATION CONTROLS
+   ========================================================================== */
+.task-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border-top: 1px solid var(--card-border);
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid var(--sidebar-border);
+  background-color: rgba(255, 255, 255, 0.8);
+  color: var(--text-main);
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: #FFFFFF;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(47, 0, 0, 0.1);
+}
+
+.pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-pages {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn.page-num {
+  min-width: 34px;
+  justify-content: center;
+  padding: 6px 10px;
+}
+
+.pagination-btn.page-num.active {
+  background-color: var(--text-main);
+  color: #FFD000;
+  border-color: var(--text-main);
+}
+
+/* ==========================================================================
    DASHBOARD — MONTHLY TASK SUMMARY STAT GRID
    ========================================================================== */
 .monthly-stats-grid {
@@ -2271,6 +2328,30 @@ body {
   }
   .action-btn-group {
     gap: 10px;
+  }
+
+  /* ---- Month tabs: horizontally scrollable strip instead of wrapping,
+     so many months (a full year of Due Dates) stay reachable without
+     pushing the page taller. ---- */
+  .task-month-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+  }
+  .month-tab {
+    flex-shrink: 0;
+  }
+
+  /* ---- Pagination: keep Previous/Next reachable and page numbers wrapping
+     rather than overflowing off-screen. ---- */
+  .task-pagination {
+    padding: 14px 12px;
+    gap: 6px;
+  }
+  /* Hide the "Previous"/"Next" text labels on narrow screens, keep icons */
+  .pagination-btn.pagination-nav span {
+    display: none;
   }
 
   /* ---- Task / Event Modal & every other modal ---- */
